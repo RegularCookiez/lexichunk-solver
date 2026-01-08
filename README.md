@@ -10,7 +10,7 @@ Each column of words has a specific group of letters taken away anywhere in the 
 
 ![My Image](lexichunk_example.jpg)
 
-This Python solver uses a combination of regex searches and string slicing to brute force possible chunks, and find those common amongst column sets to calculate valid word combinations.
+This Python solver uses regex wildcard insertions and string slicing to brute force possible chunks, and find those common amongst column sets to calculate valid word combinations.
 
 ## User Guide
 
