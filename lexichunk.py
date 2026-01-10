@@ -29,11 +29,11 @@ for i in range(column_numbers):
 process_start = perf_counter()
 
 potential_removed_groups = []
-all_possible_answers = []
+all_possible_answers = set()
 
 for x in all_columns:
  
- all_possible_answers = []
+ all_possible_answers = set()
 
  for y in x:
 
@@ -47,7 +47,7 @@ for x in all_columns:
   #Creates a list of all possible regexes that can check for full words with missing chunks.
   #It checks for a word that has any amount of filler letters in any index of the word.
 
-  possible_answers = []
+  possible_answers = set()
   regex_needed = []
   for i in range(len(y)+1):
    regex_needed.append(f"^{y[:i]}.*{y[i:]}$")
@@ -58,12 +58,14 @@ for x in all_columns:
 
   for z in dictionary:
    for r in regex_needed:
-    if re.search(r, z) and y != z:
-     if -len(r)+r.index(".*")+3 != 0:
-      removed_chunk = z[r.index(".*")-1:-len(r)+r.index(".*")+3]
+    if y != z and re.search(r, z):
+     chunk_start = r.index(".*")-1
+     chunk_end = -len(r)+r.index(".*")+3
+     if chunk_end != 0:
+      removed_chunk = z[chunk_start:chunk_end]
      else:
-      removed_chunk = z[r.index(".*")-1:]
-     possible_answers.append(removed_chunk)
+      removed_chunk = z[chunk_start:]
+     possible_answers.add(removed_chunk)
 
 
   #If this is the first word in the column, it sets all the list all_possible_answers to the possible chunks.
@@ -72,13 +74,13 @@ for x in all_columns:
   if x.index(y) == 0:
    all_possible_answers = possible_answers
   else:
-   all_possible_answers = list(set(all_possible_answers).intersection(set(possible_answers)))
+   all_possible_answers &= possible_answers
 
 
  #When it is done solving for every column, it generates a list of every possible chunk in each column, with a slash for readability later on.
 
  if all_columns.index(x) != len(all_columns)-1:
-  all_possible_answers = [f"{x}/" for x in all_possible_answers]
+  all_possible_answers = {f"{x}/" for x in all_possible_answers}
  potential_removed_groups.append(all_possible_answers)
 
 
