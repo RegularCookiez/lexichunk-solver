@@ -1,9 +1,7 @@
 import os
 import re
 import numpy as np
-from itertools import product
 from time import perf_counter
-
 
 #The dictionary is unpacked from the dictionary.txt file and loaded into a NumPy array.
 
@@ -45,20 +43,24 @@ for x in all_columns:
 
 
   #Creates a list of all possible regexes that can check for full words with missing chunks.
+  #Also creates a separate list of those compilde patterns.
   #It checks for a word that has any amount of filler letters in any index of the word.
 
   possible_answers = set()
   regex_needed = []
+  compiled_patterns = []
   for i in range(len(y)+1):
-   regex_needed.append(f"^{y[:i]}.*{y[i:]}$")
+   r = f"^{y[:i]}.*{y[i:]}$"
+   regex_needed.append(r)
+   compiled_patterns.append(re.compile(r))
 
 
   #Searches the dictionary and checks for any words that match the given words in the column.
   #Via string slicing, the chunk word is then deduced.
 
   for z in dictionary:
-   for r in regex_needed:
-    if y != z and re.search(r, z):
+   for pattern, r in zip(compiled_patterns, regex_needed):
+    if y != z and pattern.search(z):
      chunk_start = r.index(".*")-1
      chunk_end = -len(r)+r.index(".*")+3
      if chunk_end != 0:
@@ -68,8 +70,8 @@ for x in all_columns:
      possible_answers.add(removed_chunk)
 
 
-  #If this is the first word in the column, it sets all the list all_possible_answers to the possible chunks.
-  #If not, it is addended to the list all_possible_answers and converted into a set which will only have chunks valid in every word in the column.
+  #If this is the first word in the column, it sets the set all_possible_answers to the set of possible chunks.
+  #If not, all_possible_answers is taken as the intersection between itself and possible_answers.
 
   if x.index(y) == 0:
    all_possible_answers = possible_answers
@@ -77,10 +79,8 @@ for x in all_columns:
    all_possible_answers &= possible_answers
 
 
- #When it is done solving for every column, it generates a list of every possible chunk in each column, with a slash for readability later on.
+ #When it is done solving for every column, it generates a list of every possible chunk in each column.
 
- if all_columns.index(x) != len(all_columns)-1:
-  all_possible_answers = {f"{x}/" for x in all_possible_answers}
  potential_removed_groups.append(all_possible_answers)
 
 
@@ -90,20 +90,22 @@ os.system('cls' if os.name == 'nt' else 'clear')
 print("Checking all combinations of chunks...")
 
 
-#It generates every possible combination of every potential chunk from each column, and checking it with the dictionary to see if it is a word.
+#It constructs a regex query to check for chunk combinations, and compiles it.
 
-all_combinations = list(product(*potential_removed_groups))
-
-all_combinations = np.array(["".join(x) for x in all_combinations.copy()])
+combo_regex_query = "^" + "".join(f"({'|'.join(x)})" for x in potential_removed_groups) + "$"
+pattern = re.compile(combo_regex_query)
 
 valid_solutions = []
 
 
-#Chunks that combine to form real words are added to the valid_solutions list.
+#It then finds words matching that pattern, and uses groups() to demarcate chunks with slashes, adding it to valid_solutions.
 
-for x in all_combinations:
- if x.replace("/","") in dictionary:
-  valid_solutions.append(x)
+for w in dictionary:
+ match = pattern.match(w)
+ if match:
+  chunks = match.groups()
+  slashed_word = "/".join(chunks)
+  valid_solutions.append(slashed_word)
 
 
 #perf_counter is used here to calculate the time taken for the search.
